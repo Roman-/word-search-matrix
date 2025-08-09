@@ -12,7 +12,7 @@
  * @returns {string[][]} grid of single-character strings
  * @throws if impossible to construct
  */
-function generateUniqueWordGrid(width, height, word, opts = {}) {
+export function generateUniqueWordGrid(width, height, word, opts = {}) {
   if (!Number.isInteger(width) || width <= 0 ||
       !Number.isInteger(height) || height <= 0) {
     throw new Error("width and height must be positive integers.");
@@ -224,9 +224,4 @@ function generateUniqueWordGrid(width, height, word, opts = {}) {
   throw new Error(`Couldn't build a unique grid for "${word}" at ${width}×${height}. Try a different size, word, or increase maxAttempts.`);
 }
 
-// ---------- Usage example ----------
-const grid = generateUniqueWordGrid(4, 4, "fly", { seed: 42 });
-// Print it nicely:
-console.log(grid.map(row => row.join("")).join("\n"));
-// Or flatten row-by-row:
-console.log(grid.flat().join(""));
+export default generateUniqueWordGrid;
