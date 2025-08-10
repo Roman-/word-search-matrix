@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react'
-import { generateUniqueWordGrid } from './utils/wordMatrixGenerator.js'
+import generateWordSearchGrid from './utils/MultiWordMatrixGenerator.js'
 
 const fonts = ['Roboto', 'Open Sans', 'Lato', 'Poppins', 'Montserrat']
 
 function App() {
-  const [word, setWord] = useState('WORD')
+  const [words, setWords] = useState('WORD')
+  const [letters, setLetters] = useState('')
   const [size, setSize] = useState('6x6')
   const [font, setFont] = useState(fonts[0])
   const [cellSize, setCellSize] = useState(40)
@@ -16,10 +17,12 @@ function App() {
     const [wStr, hStr] = size.toLowerCase().split('x')
     const width = parseInt(wStr, 10)
     const height = parseInt(hStr ?? wStr, 10)
-    if (!word || !width || !height) return
+    if (!words || !width || !height) return
 
     try {
-      const grid = generateUniqueWordGrid(width, height, word)
+      const wordsArr = words.trim().split(/\s+/).filter(Boolean)
+      const lettersArr = letters.split('').filter(Boolean)
+      const { grid } = generateWordSearchGrid(wordsArr, lettersArr, width, height)
       drawGrid(grid)
     } catch (err) {
       const canvas = canvasRef.current
@@ -56,7 +59,8 @@ function App() {
     const canvas = canvasRef.current
     if (!canvas) return
     const link = document.createElement('a')
-    link.download = `${word || 'image'}.png`
+    const fileName = (words || 'image').replace(/\s+/g, '_')
+    link.download = `${fileName}.png`
     link.href = canvas.toDataURL('image/png')
     link.click()
   }
@@ -68,9 +72,16 @@ function App() {
           <input
             type="text"
             className="input input-bordered w-full"
-            value={word}
-            onChange={(e) => setWord(e.target.value)}
-            placeholder="Word"
+            value={words}
+            onChange={(e) => setWords(e.target.value)}
+            placeholder="Words (space-separated)"
+          />
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            value={letters}
+            onChange={(e) => setLetters(e.target.value)}
+            placeholder="Possible letters (e.g. ABCD)"
           />
           <input
             type="text"
