@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import tinycolor from 'tinycolor2'
 import generateWordSearchGrid from './utils/MultiWordMatrixGenerator.js'
 
 const fonts = ['Roboto', 'Open Sans', 'Lato', 'Poppins', 'Montserrat']
@@ -8,9 +9,17 @@ function App() {
   const [letters, setLetters] = useState('')
   const [size, setSize] = useState('6x6')
   const [font, setFont] = useState(fonts[0])
-  const [cellSize, setCellSize] = useState(40)
+  const [cellSize, setCellSize] = useState(90)
   const [margin, setMargin] = useState(10)
   const [bold, setBold] = useState(true)
+  const [colorMode, setColorMode] = useState('solid')
+  const [solidColor, setSolidColor] = useState('#000000')
+  const [gradientColors, setGradientColors] = useState({
+    tl: '#ff0000',
+    tr: '#00ff00',
+    bl: '#0000ff',
+    br: '#890A6E',
+  })
   const canvasRef = useRef(null)
 
   const handleGenerate = () => {
@@ -46,10 +55,26 @@ function App() {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.font = `${bold ? 'bold ' : ''}${Math.floor(cell * 0.6)}px "${font}"`
-    for (let i = 0; i < grid.length; i++) {
-      for (let j = 0; j < grid[0].length; j++) {
+
+    const rows = grid.length
+    const cols = grid[0].length
+
+    const getGradientColor = (i, j) => {
+      const xRatio = cols <= 1 ? 0 : j / (cols - 1)
+      const yRatio = rows <= 1 ? 0 : i / (rows - 1)
+      const top = tinycolor.mix(gradientColors.tl, gradientColors.tr, xRatio * 100)
+      const bottom = tinycolor.mix(gradientColors.bl, gradientColors.br, xRatio * 100)
+      return tinycolor.mix(top, bottom, yRatio * 100).toHexString()
+    }
+
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
         const x = m + j * cell + cell / 2
         const y = m + i * cell + cell / 2
+        ctx.fillStyle =
+          colorMode === 'gradient'
+            ? getGradientColor(i, j)
+            : solidColor
         ctx.fillText(grid[i][j], x, y)
       }
     }
@@ -131,6 +156,72 @@ function App() {
                 onChange={(e) => setBold(e.target.checked)}
               />
             </label>
+          </div>
+          <div className="flex flex-col gap-2">
+            <select
+              className="select select-bordered"
+              value={colorMode}
+              onChange={(e) => setColorMode(e.target.value)}
+            >
+              <option value="solid">Solid Color</option>
+              <option value="gradient">Gradient</option>
+            </select>
+            {colorMode === 'solid' && (
+              <input
+                type="color"
+                className="w-16 h-10"
+                value={solidColor}
+                onChange={(e) => setSolidColor(e.target.value)}
+              />
+            )}
+            {colorMode === 'gradient' && (
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col items-center">
+                  <span className="label-text">TL</span>
+                  <input
+                    type="color"
+                    className="w-16 h-10"
+                    value={gradientColors.tl}
+                    onChange={(e) =>
+                      setGradientColors({ ...gradientColors, tl: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="flex flex-col items-center">
+                  <span className="label-text">TR</span>
+                  <input
+                    type="color"
+                    className="w-16 h-10"
+                    value={gradientColors.tr}
+                    onChange={(e) =>
+                      setGradientColors({ ...gradientColors, tr: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="flex flex-col items-center">
+                  <span className="label-text">BL</span>
+                  <input
+                    type="color"
+                    className="w-16 h-10"
+                    value={gradientColors.bl}
+                    onChange={(e) =>
+                      setGradientColors({ ...gradientColors, bl: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="flex flex-col items-center">
+                  <span className="label-text">BR</span>
+                  <input
+                    type="color"
+                    className="w-16 h-10"
+                    value={gradientColors.br}
+                    onChange={(e) =>
+                      setGradientColors({ ...gradientColors, br: e.target.value })
+                    }
+                  />
+                </label>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <button className="btn btn-primary" onClick={handleGenerate}>
