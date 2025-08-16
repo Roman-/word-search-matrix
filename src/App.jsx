@@ -78,6 +78,8 @@ function App() {
         ctx.fillText(grid[i][j], x, y)
       }
     }
+    console.log(grid)
+    console.log(grid.join("\n"))
   }
 
   const handleDownload = () => {
