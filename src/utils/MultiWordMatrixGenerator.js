@@ -8,8 +8,8 @@
  * @param {string[]} letters
  * @param {number} width
  * @param {number} height
- * @param {{ seed?: number|string, tieBreaker?: 'random'|'center' }} [options]
- * @returns {{ grid: string[], placements: Array<{word:string,row:number,col:number,dir:'H'|'V'}> }}
+ * @param {{ seed?: number|string, tieBreaker?: 'random'|'center', maxIterations?: number }} [options]
+ * @returns {{ grid: string[], placements: Array<{word:string,row:number,col:number,dir:'H'|'V'}>, partial?: boolean }}
  */
 export function generateWordSearchGrid(words, letters, width, height, options = {}) {
   // ---- RNG (seedable) ----
@@ -60,6 +60,27 @@ export function generateWordSearchGrid(words, letters, width, height, options = 
   let best = null; // { placementsById, intersections, filledGridRows }
   const currentPlacements = new Map();
   let currentIntersections = 0;
+  const maxIterations = options.maxIterations ?? 50000;
+  let iterations = 0;
+  let cancelled = false;
+  let bestPartial = null; // { placementsById, intersections, filledGridRows, placedCount }
+
+  function recordPartial() {
+    const placedCount = currentPlacements.size;
+    if (
+      !bestPartial ||
+      placedCount > bestPartial.placedCount ||
+      (placedCount === bestPartial.placedCount && currentIntersections > bestPartial.intersections)
+    ) {
+      const rows = grid.map(row => row.map(ch => ch ?? randomChoice([...allowed])).join(""));
+      bestPartial = {
+        placementsById: new Map(currentPlacements),
+        intersections: currentIntersections,
+        filledGridRows: rows,
+        placedCount
+      };
+    }
+  }
 
   // ---- Helpers ----
   function normalizeAndExpandLetters(lettersArr, wordsArr) {
@@ -308,6 +329,9 @@ export function generateWordSearchGrid(words, letters, width, height, options = 
 
   // ---- Backtracking search (aim for max intersections) ----
   function search(remaining) {
+    if (cancelled) return;
+    recordPartial();
+    if (iterations++ > maxIterations) { cancelled = true; return; }
     if (remaining.length === 0) {
       // Ensure placed letters alone give exactly the required counts
       const uniq = new Set(cleanWords);
@@ -350,6 +374,7 @@ export function generateWordSearchGrid(words, letters, width, height, options = 
     const rest = remaining.slice(0, chosenIdx).concat(remaining.slice(chosenIdx + 1));
 
     for (const p of chosenPlacements) {
+      if (cancelled) return;
       const newly = placeWord(chosen.word, p);
       currentPlacements.set(chosen.id, { word: chosen.word, row: p.row, col: p.col, dir: p.dir, score: p.score });
       currentIntersections += p.score;
@@ -359,21 +384,32 @@ export function generateWordSearchGrid(words, letters, width, height, options = 
       currentIntersections -= p.score;
       currentPlacements.delete(chosen.id);
       undo(newly);
+      if (cancelled) return;
     }
   }
 
   search(wordObjs);
-  if (!best) {
-    throw new Error("Unable to generate a valid grid under the exactly-once constraint.");
+  if (best) {
+    const placementsOut = [];
+    for (const { id, word } of wordObjs) {
+      const p = best.placementsById.get(id);
+      placementsOut.push({ word, row: p.row, col: p.col, dir: p.dir });
+    }
+    return { grid: best.filledGridRows.slice(), placements: placementsOut, partial: false };
   }
 
-  // Build final result using the recorded best solution
-  const placementsOut = [];
-  for (const { id, word } of wordObjs) {
-    const p = best.placementsById.get(id);
-    placementsOut.push({ word, row: p.row, col: p.col, dir: p.dir });
+  if (bestPartial) {
+    const placementsOut = [];
+    for (const p of bestPartial.placementsById.values()) {
+      placementsOut.push({ word: p.word, row: p.row, col: p.col, dir: p.dir });
+    }
+    return { grid: bestPartial.filledGridRows.slice(), placements: placementsOut, partial: true };
   }
-  return { grid: best.filledGridRows.slice(), placements: placementsOut };
+
+  const msg = cancelled
+    ? `Unable to generate a valid grid within ${maxIterations} iterations.`
+    : "Unable to generate a valid grid under the exactly-once constraint.";
+  throw new Error(msg);
 
   // ---- tiny seedable RNG (mulberry32 via xmur3 hash) ----
   function makeRNG(seed) {

@@ -31,8 +31,9 @@ function App() {
     try {
       const wordsArr = words.trim().split(/\s+/).filter(Boolean)
       const lettersArr = letters.split('').filter(Boolean)
-      const { grid } = generateWordSearchGrid(wordsArr, lettersArr, width, height)
+      const { grid, partial } = generateWordSearchGrid(wordsArr, lettersArr, width, height, { maxIterations: 50000 })
       drawGrid(grid)
+      if (partial) console.warn('Generation stopped early; result may be incomplete.')
     } catch (err) {
       const canvas = canvasRef.current
       if (canvas) {
