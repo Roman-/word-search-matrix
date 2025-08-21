@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react'
 import tinycolor from 'tinycolor2'
-import generateWordSearchGrid from './utils/MultiWordMatrixGenerator.js'
 
 const fonts = ['Roboto', 'Open Sans', 'Lato', 'Poppins', 'Montserrat']
 
@@ -21,6 +20,10 @@ function App() {
     br: '#890A6E',
   })
   const canvasRef = useRef(null)
+  const workerRef = useRef(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [status, setStatus] = useState('')
 
   const handleGenerate = () => {
     const [wStr, hStr] = size.toLowerCase().split('x')
@@ -28,20 +31,47 @@ function App() {
     const height = parseInt(hStr ?? wStr, 10)
     if (!words || !width || !height) return
 
-    try {
-      const wordsArr = words.trim().split(/\s+/).filter(Boolean)
-      const lettersArr = letters.split('').filter(Boolean)
-      const { grid, partial } = generateWordSearchGrid(wordsArr, lettersArr, width, height, { maxIterations: 50000 })
-      drawGrid(grid)
-      if (partial) console.warn('Generation stopped early; result may be incomplete.')
-    } catch (err) {
-      const canvas = canvasRef.current
-      if (canvas) {
-        const ctx = canvas.getContext('2d')
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
+    if (workerRef.current) workerRef.current.terminate()
+
+    const wordsArr = words.trim().split(/\s+/).filter(Boolean)
+    const lettersArr = letters.split('').filter(Boolean)
+
+    setIsGenerating(true)
+    setProgress(0)
+    setStatus('')
+
+    const worker = new Worker(new URL('./utils/generateWorker.js', import.meta.url), { type: 'module' })
+    workerRef.current = worker
+    worker.onmessage = (e) => {
+      const { type } = e.data
+      if (type === 'progress') {
+        setProgress(e.data.progress)
+      } else if (type === 'result') {
+        const { grid, partial, placements } = e.data.result
+        drawGrid(grid)
+        setIsGenerating(false)
+        setProgress(1)
+        worker.terminate()
+        const missing = wordsArr.map(w => w.toUpperCase()).filter(w => !placements.some(p => p.word === w))
+        if (partial) {
+          setStatus(`Generation stopped early; missing words: ${missing.join(', ')}`)
+        } else if (missing.length) {
+          setStatus(`Missing words: ${missing.join(', ')}`)
+        } else {
+          setStatus('')
+        }
+      } else if (type === 'error') {
+        setIsGenerating(false)
+        worker.terminate()
+        setStatus(e.data.message)
+        const canvas = canvasRef.current
+        if (canvas) {
+          const ctx = canvas.getContext('2d')
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+        }
       }
-      console.error(err)
     }
+    worker.postMessage({ words: wordsArr, letters: lettersArr, width, height, options: { maxIterations: 50000 } })
   }
 
   const drawGrid = (grid) => {
@@ -234,6 +264,10 @@ function App() {
               Download PNG
             </button>
           </div>
+          {isGenerating && (
+            <progress className="progress w-full" value={progress * 100} max="100"></progress>
+          )}
+          {status && <div className="text-warning text-sm">{status}</div>}
         </div>
         <canvas
           ref={canvasRef}

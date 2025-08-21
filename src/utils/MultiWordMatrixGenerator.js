@@ -8,7 +8,7 @@
  * @param {string[]} letters
  * @param {number} width
  * @param {number} height
- * @param {{ seed?: number|string, tieBreaker?: 'random'|'center', maxIterations?: number }} [options]
+ * @param {{ seed?: number|string, tieBreaker?: 'random'|'center', maxIterations?: number, onProgress?: (ratio:number)=>void }} [options]
  * @returns {{ grid: string[], placements: Array<{word:string,row:number,col:number,dir:'H'|'V'}>, partial?: boolean }}
  */
 export function generateWordSearchGrid(words, letters, width, height, options = {}) {
@@ -61,6 +61,7 @@ export function generateWordSearchGrid(words, letters, width, height, options = 
   const currentPlacements = new Map();
   let currentIntersections = 0;
   const maxIterations = options.maxIterations ?? 50000;
+  const onProgress = options.onProgress;
   let iterations = 0;
   let cancelled = false;
   let bestPartial = null; // { placementsById, intersections, filledGridRows, placedCount }
@@ -332,6 +333,7 @@ export function generateWordSearchGrid(words, letters, width, height, options = 
     if (cancelled) return;
     recordPartial();
     if (iterations++ > maxIterations) { cancelled = true; return; }
+    if (onProgress && iterations % 1000 === 0) onProgress(iterations / maxIterations);
     if (remaining.length === 0) {
       // Ensure placed letters alone give exactly the required counts
       const uniq = new Set(cleanWords);
@@ -390,6 +392,7 @@ export function generateWordSearchGrid(words, letters, width, height, options = 
 
   search(wordObjs);
   if (best) {
+    if (onProgress) onProgress(1);
     const placementsOut = [];
     for (const { id, word } of wordObjs) {
       const p = best.placementsById.get(id);
@@ -399,6 +402,7 @@ export function generateWordSearchGrid(words, letters, width, height, options = 
   }
 
   if (bestPartial) {
+    if (onProgress) onProgress(1);
     const placementsOut = [];
     for (const p of bestPartial.placementsById.values()) {
       placementsOut.push({ word: p.word, row: p.row, col: p.col, dir: p.dir });
@@ -409,6 +413,7 @@ export function generateWordSearchGrid(words, letters, width, height, options = 
   const msg = cancelled
     ? `Unable to generate a valid grid within ${maxIterations} iterations.`
     : "Unable to generate a valid grid under the exactly-once constraint.";
+  if (onProgress) onProgress(1);
   throw new Error(msg);
 
   // ---- tiny seedable RNG (mulberry32 via xmur3 hash) ----
