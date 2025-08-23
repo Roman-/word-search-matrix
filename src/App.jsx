@@ -42,17 +42,19 @@ function App() {
 
     const worker = new Worker(new URL('./utils/generateWorker.js', import.meta.url), { type: 'module' })
     workerRef.current = worker
-    worker.onmessage = (e) => {
+    worker.onmessage = async (e) => {
       const { type } = e.data
       if (type === 'progress') {
         setProgress(e.data.progress)
       } else if (type === 'result') {
         const { grid, partial, placements } = e.data.result
-        drawGrid(grid)
+        await drawGrid(grid)
         setIsGenerating(false)
         setProgress(1)
         worker.terminate()
-        const missing = wordsArr.map(w => w.toUpperCase()).filter(w => !placements.some(p => p.word === w))
+        const missing = wordsArr
+          .map((w) => w.toUpperCase())
+          .filter((w) => !placements.some((p) => p.word === w))
         if (partial) {
           setStatus(`Generation stopped early; missing words: ${missing.join(', ')}`)
         } else if (missing.length) {
@@ -74,18 +76,28 @@ function App() {
     worker.postMessage({ words: wordsArr, letters: lettersArr, width, height, options: { maxIterations: 50000 } })
   }
 
-  const drawGrid = (grid) => {
+  const drawGrid = async (grid) => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     const cell = parseInt(cellSize, 10) || 40
     const m = parseInt(margin, 10) || 0
+
+    const fontSpec = `${bold ? 'bold ' : ''}${Math.floor(cell * 0.6)}px "${font}"`
+    if (document.fonts?.load) {
+      try {
+        await document.fonts.load(fontSpec)
+      } catch {
+        /* ignore font loading errors */
+      }
+    }
+
     canvas.width = grid[0].length * cell + m * 2
     canvas.height = grid.length * cell + m * 2
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.font = `${bold ? 'bold ' : ''}${Math.floor(cell * 0.6)}px "${font}"`
+    ctx.font = fontSpec
 
     const rows = grid.length
     const cols = grid[0].length
