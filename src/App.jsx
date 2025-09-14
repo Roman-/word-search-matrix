@@ -24,6 +24,7 @@ function App() {
   const [bold, setBold] = useState(true)
   const [colorMode, setColorMode] = useState('solid')
   const [solidColor, setSolidColor] = useState('#000000')
+  const [encoding, setEncoding] = useState('free')
   const [gradientColors, setGradientColors] = useState({
     tl: '#ff0000',
     tr: '#00ff00',
@@ -97,7 +98,13 @@ function App() {
         }
       }
     }
-    worker.postMessage({ words: wordsArr, letters: lettersArr, width, height, options: { maxIterations: 50000 } })
+    worker.postMessage({
+      words: wordsArr,
+      letters: lettersArr,
+      width,
+      height,
+      options: { maxIterations: 50000, encoding }
+    })
   }
 
   const drawGrid = async (grid) => {
@@ -185,6 +192,17 @@ function App() {
           onChange={(e) => setSize(e.target.value)}
           placeholder="Grid size (e.g. 6x6)"
         />
+        <label className="flex flex-col w-full">
+          <span className="label-text">Encoding Method</span>
+          <select
+            className="select select-bordered"
+            value={encoding}
+            onChange={(e) => setEncoding(e.target.value)}
+          >
+            <option value="free">Free allocation (no intersections)</option>
+            <option value="intersections">Force intersections</option>
+          </select>
+        </label>
         <div className="flex flex-wrap gap-2">
           <label className="flex flex-col w-24">
             <span className="label-text">Cell</span>
