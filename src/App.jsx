@@ -2,6 +2,17 @@ import { useState, useRef } from 'react'
 import tinycolor from 'tinycolor2'
 
 const fonts = ['Roboto', 'Open Sans', 'Lato', 'Poppins', 'Montserrat']
+const darkPalette = [
+  '#1f2937',
+  '#1e40af',
+  '#5b21b6',
+  '#065f46',
+  '#7c2d12',
+  '#9d174d',
+]
+
+const getRandomPaletteColor = () =>
+  darkPalette[Math.floor(Math.random() * darkPalette.length)]
 
 function App() {
   const [words, setWords] = useState('WORD')
@@ -24,6 +35,19 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState('')
+
+  const randomizeColors = () => {
+    if (colorMode === 'gradient') {
+      setGradientColors({
+        tl: getRandomPaletteColor(),
+        tr: getRandomPaletteColor(),
+        bl: getRandomPaletteColor(),
+        br: getRandomPaletteColor(),
+      })
+    } else {
+      setSolidColor(getRandomPaletteColor())
+    }
+  }
 
   const handleGenerate = () => {
     const [wStr, hStr] = size.toLowerCase().split('x')
@@ -117,6 +141,8 @@ function App() {
         ctx.fillStyle =
           colorMode === 'gradient'
             ? getGradientColor(i, j)
+            : colorMode === 'random'
+            ? getRandomPaletteColor()
             : solidColor
         ctx.fillText(grid[i][j], x, y)
       }
@@ -136,155 +162,158 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200 p-4">
-      <div className="card w-full max-w-md bg-base-100 shadow-xl p-4 gap-4">
-        <div className="flex flex-col gap-3">
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            value={words}
-            onChange={(e) => setWords(e.target.value)}
-            placeholder="Words (space-separated)"
-          />
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            value={letters}
-            onChange={(e) => setLetters(e.target.value)}
-            placeholder="Possible letters (e.g. ABCD)"
-          />
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            value={size}
-            onChange={(e) => setSize(e.target.value)}
-            placeholder="Grid size (e.g. 6x6)"
-          />
-          <div className="flex flex-wrap gap-2">
-            <label className="flex flex-col w-24">
-              <span className="label-text">Cell</span>
-              <input
-                type="number"
-                className="input input-bordered"
-                value={cellSize}
-                onChange={(e) => setCellSize(e.target.value)}
-              />
-            </label>
-            <label className="flex flex-col w-24">
-              <span className="label-text">Margin</span>
-              <input
-                type="number"
-                className="input input-bordered"
-                value={margin}
-                onChange={(e) => setMargin(e.target.value)}
-              />
-            </label>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+    <div className="min-h-screen flex flex-col md:flex-row bg-base-200">
+      <div className="w-full md:w-1/3 bg-base-100 p-4 flex flex-col gap-3 shadow-xl">
+        <input
+          type="text"
+          className="input input-bordered w-full"
+          value={words}
+          onChange={(e) => setWords(e.target.value)}
+          placeholder="Words (space-separated)"
+        />
+        <input
+          type="text"
+          className="input input-bordered w-full"
+          value={letters}
+          onChange={(e) => setLetters(e.target.value)}
+          placeholder="Possible letters (e.g. ABCD)"
+        />
+        <input
+          type="text"
+          className="input input-bordered w-full"
+          value={size}
+          onChange={(e) => setSize(e.target.value)}
+          placeholder="Grid size (e.g. 6x6)"
+        />
+        <div className="flex flex-wrap gap-2">
+          <label className="flex flex-col w-24">
+            <span className="label-text">Cell</span>
+            <input
+              type="number"
+              className="input input-bordered"
+              value={cellSize}
+              onChange={(e) => setCellSize(e.target.value)}
+            />
+          </label>
+          <label className="flex flex-col w-24">
+            <span className="label-text">Margin</span>
+            <input
+              type="number"
+              className="input input-bordered"
+              value={margin}
+              onChange={(e) => setMargin(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="select select-bordered"
+            value={font}
+            onChange={(e) => setFont(e.target.value)}
+          >
+            {fonts.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+          <label className="label cursor-pointer gap-2">
+            <span className="label-text">Bold</span>
+            <input
+              type="checkbox"
+              className="checkbox"
+              checked={bold}
+              onChange={(e) => setBold(e.target.checked)}
+            />
+          </label>
+        </div>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
             <select
-              className="select select-bordered"
-              value={font}
-              onChange={(e) => setFont(e.target.value)}
-            >
-              {fonts.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
-            <label className="label cursor-pointer gap-2">
-              <span className="label-text">Bold</span>
-              <input
-                type="checkbox"
-                className="checkbox"
-                checked={bold}
-                onChange={(e) => setBold(e.target.checked)}
-              />
-            </label>
-          </div>
-          <div className="flex flex-col gap-2">
-            <select
-              className="select select-bordered"
+              className="select select-bordered flex-1"
               value={colorMode}
               onChange={(e) => setColorMode(e.target.value)}
             >
               <option value="solid">Solid Color</option>
               <option value="gradient">Gradient</option>
+              <option value="random">Random</option>
             </select>
-            {colorMode === 'solid' && (
-              <input
-                type="color"
-                className="w-16 h-10"
-                value={solidColor}
-                onChange={(e) => setSolidColor(e.target.value)}
-              />
-            )}
-            {colorMode === 'gradient' && (
-              <div className="grid grid-cols-2 gap-2">
-                <label className="flex flex-col items-center">
-                  <span className="label-text">TL</span>
-                  <input
-                    type="color"
-                    className="w-16 h-10"
-                    value={gradientColors.tl}
-                    onChange={(e) =>
-                      setGradientColors({ ...gradientColors, tl: e.target.value })
-                    }
-                  />
-                </label>
-                <label className="flex flex-col items-center">
-                  <span className="label-text">TR</span>
-                  <input
-                    type="color"
-                    className="w-16 h-10"
-                    value={gradientColors.tr}
-                    onChange={(e) =>
-                      setGradientColors({ ...gradientColors, tr: e.target.value })
-                    }
-                  />
-                </label>
-                <label className="flex flex-col items-center">
-                  <span className="label-text">BL</span>
-                  <input
-                    type="color"
-                    className="w-16 h-10"
-                    value={gradientColors.bl}
-                    onChange={(e) =>
-                      setGradientColors({ ...gradientColors, bl: e.target.value })
-                    }
-                  />
-                </label>
-                <label className="flex flex-col items-center">
-                  <span className="label-text">BR</span>
-                  <input
-                    type="color"
-                    className="w-16 h-10"
-                    value={gradientColors.br}
-                    onChange={(e) =>
-                      setGradientColors({ ...gradientColors, br: e.target.value })
-                    }
-                  />
-                </label>
-              </div>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button className="btn btn-primary" onClick={handleGenerate}>
-              Generate
-            </button>
-            <button className="btn" onClick={handleDownload}>
-              Download PNG
+            <button className="btn btn-square" onClick={randomizeColors}>
+              🎲
             </button>
           </div>
-          {isGenerating && (
-            <progress className="progress w-full" value={progress * 100} max="100"></progress>
+          {colorMode === 'solid' && (
+            <input
+              type="color"
+              className="w-16 h-10"
+              value={solidColor}
+              onChange={(e) => setSolidColor(e.target.value)}
+            />
           )}
-          {status && <div className="text-warning text-sm">{status}</div>}
+          {colorMode === 'gradient' && (
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col items-center">
+                <span className="label-text">TL</span>
+                <input
+                  type="color"
+                  className="w-16 h-10"
+                  value={gradientColors.tl}
+                  onChange={(e) =>
+                    setGradientColors({ ...gradientColors, tl: e.target.value })
+                  }
+                />
+              </label>
+              <label className="flex flex-col items-center">
+                <span className="label-text">TR</span>
+                <input
+                  type="color"
+                  className="w-16 h-10"
+                  value={gradientColors.tr}
+                  onChange={(e) =>
+                    setGradientColors({ ...gradientColors, tr: e.target.value })
+                  }
+                />
+              </label>
+              <label className="flex flex-col items-center">
+                <span className="label-text">BL</span>
+                <input
+                  type="color"
+                  className="w-16 h-10"
+                  value={gradientColors.bl}
+                  onChange={(e) =>
+                    setGradientColors({ ...gradientColors, bl: e.target.value })
+                  }
+                />
+              </label>
+              <label className="flex flex-col items-center">
+                <span className="label-text">BR</span>
+                <input
+                  type="color"
+                  className="w-16 h-10"
+                  value={gradientColors.br}
+                  onChange={(e) =>
+                    setGradientColors({ ...gradientColors, br: e.target.value })
+                  }
+                />
+              </label>
+            </div>
+          )}
         </div>
-        <canvas
-          ref={canvasRef}
-          className="mt-4 border border-base-300 self-center"
-        />
+        <div className="flex gap-2">
+          <button className="btn btn-primary" onClick={handleGenerate}>
+            Generate
+          </button>
+          <button className="btn" onClick={handleDownload}>
+            Download PNG
+          </button>
+        </div>
+        {isGenerating && (
+          <progress className="progress w-full" value={progress * 100} max="100"></progress>
+        )}
+        {status && <div className="text-warning text-sm">{status}</div>}
+      </div>
+      <div className="flex-1 p-4 flex items-center justify-center">
+        <canvas ref={canvasRef} className="border border-base-300" />
       </div>
     </div>
   )
