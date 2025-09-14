@@ -10,6 +10,7 @@ export default function SeparatorControls({
   separatorStyle,
   setSeparatorStyle,
 }) {
+  const disabled = !showSeparators && !showBorder
   return (
     <div className="flex flex-col gap-2">
       <label className="label cursor-pointer gap-2">
@@ -38,6 +39,7 @@ export default function SeparatorControls({
           max="10"
           value={lineThickness}
           onChange={(e) => setLineThickness(parseInt(e.target.value, 10))}
+          disabled={disabled}
         />
       </label>
       <label className="flex flex-col">
@@ -47,6 +49,7 @@ export default function SeparatorControls({
           className="w-16 h-10"
           value={separatorColor}
           onChange={(e) => setSeparatorColor(e.target.value)}
+          disabled={disabled}
         />
       </label>
       <label className="flex flex-col">
@@ -55,6 +58,7 @@ export default function SeparatorControls({
           className="select select-bordered"
           value={separatorStyle}
           onChange={(e) => setSeparatorStyle(e.target.value)}
+          disabled={disabled}
         >
           <option value="solid">Solid</option>
           <option value="dashed">Dashed</option>

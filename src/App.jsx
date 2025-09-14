@@ -222,7 +222,9 @@ function App() {
       }
       ctx.setLineDash([])
     }
-    const fileName = `${(words || 'image').replace(/\s+/g, '_')}.png`
+    const firstWord = words.trim().split(/\s+/)[0] || 'image'
+    const baseFile = `${firstWord}_${canvas.width}x${canvas.height}px`
+    const fileName = `${baseFile}.png`
     const dataUrl = canvas.toDataURL('image/png')
     const byteLength = Math.round(
       (dataUrl.length - 'data:image/png;base64,'.length) * 0.75
@@ -235,7 +237,8 @@ function App() {
     const canvas = canvasRef.current
     if (!canvas) return
     const link = document.createElement('a')
-    const fileName = (words || 'image').replace(/\s+/g, '_')
+    const firstWord = words.trim().split(/\s+/)[0] || 'image'
+    const baseFile = `${firstWord}_${canvas.width}x${canvas.height}px`
     if (format === 'jpeg') {
       const tmp = document.createElement('canvas')
       tmp.width = canvas.width
@@ -245,10 +248,10 @@ function App() {
       ctx.fillRect(0, 0, tmp.width, tmp.height)
       ctx.drawImage(canvas, 0, 0)
       link.href = tmp.toDataURL('image/jpeg')
-      link.download = `${fileName}.jpeg`
+      link.download = `${baseFile}.jpeg`
     } else {
       link.href = canvas.toDataURL('image/png')
-      link.download = `${fileName}.png`
+      link.download = `${baseFile}.png`
     }
     link.click()
   }

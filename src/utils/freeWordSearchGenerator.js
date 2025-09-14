@@ -5,7 +5,9 @@ export default function generateFreeWordSearchGrid(words, letters, width, height
     throw new Error('width and height must be positive integers.');
   }
 
-  const cleanWords = words.map(w => String(w).trim().toUpperCase()).filter(w => w.length > 0);
+  const cleanWords = [
+    ...new Set(words.map(w => String(w).trim().toUpperCase()))
+  ].filter(w => w.length > 0);
   const allowed = new Set();
   for (const ch of letters) {
     const c = String(ch ?? '').toUpperCase();
