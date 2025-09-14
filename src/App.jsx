@@ -20,7 +20,7 @@ const getRandomPaletteColor = () =>
   darkPalette[Math.floor(Math.random() * darkPalette.length)]
 
 function App() {
-  const [words, setWords] = useState('WORD')
+  const [words, setWords] = useState('hello world')
   const [letters, setLetters] = useState('')
   const [size, setSize] = useState('6x6')
   const [font, setFont] = useState(fonts[0])
