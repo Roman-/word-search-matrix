@@ -25,7 +25,7 @@ function App() {
   const [size, setSize] = useState('6x6')
   const [font, setFont] = useState(fonts[0])
   const [cellSize, setCellSize] = useState(90)
-  const [margin, setMargin] = useState(10)
+  const [margin, setMargin] = useState(0)
   const [bold, setBold] = useState(true)
   const [colorMode, setColorMode] = useState('solid')
   const [solidColor, setSolidColor] = useState('#000000')
@@ -48,6 +48,7 @@ function App() {
   const [lineThickness, setLineThickness] = useState(1)
   const [separatorColor, setSeparatorColor] = useState('#808080')
   const [separatorStyle, setSeparatorStyle] = useState('solid')
+  const [fileInfo, setFileInfo] = useState({ name: '', size: '' })
 
   useEffect(() => {
     if (gridData) {
@@ -69,6 +70,11 @@ function App() {
     separatorColor,
     separatorStyle,
   ])
+
+  useEffect(() => {
+    handleGenerate()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const randomizeColors = () => {
     if (colorMode === 'gradient') {
@@ -216,6 +222,13 @@ function App() {
       }
       ctx.setLineDash([])
     }
+    const fileName = `${(words || 'image').replace(/\s+/g, '_')}.png`
+    const dataUrl = canvas.toDataURL('image/png')
+    const byteLength = Math.round(
+      (dataUrl.length - 'data:image/png;base64,'.length) * 0.75
+    )
+    const size = `${(byteLength / 1024).toFixed(2)} KB`
+    setFileInfo({ name: fileName, size })
   }
 
   const handleDownload = (format = 'png') => {
@@ -223,9 +236,20 @@ function App() {
     if (!canvas) return
     const link = document.createElement('a')
     const fileName = (words || 'image').replace(/\s+/g, '_')
-    const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png'
-    link.download = `${fileName}.${format === 'jpeg' ? 'jpeg' : 'png'}`
-    link.href = canvas.toDataURL(mime)
+    if (format === 'jpeg') {
+      const tmp = document.createElement('canvas')
+      tmp.width = canvas.width
+      tmp.height = canvas.height
+      const ctx = tmp.getContext('2d')
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, tmp.width, tmp.height)
+      ctx.drawImage(canvas, 0, 0)
+      link.href = tmp.toDataURL('image/jpeg')
+      link.download = `${fileName}.jpeg`
+    } else {
+      link.href = canvas.toDataURL('image/png')
+      link.download = `${fileName}.png`
+    }
     link.click()
   }
 
@@ -276,7 +300,7 @@ function App() {
           separatorStyle={separatorStyle}
           setSeparatorStyle={setSeparatorStyle}
         />
-        <DownloadButtons handleDownload={handleDownload} />
+        <DownloadButtons handleDownload={handleDownload} fileInfo={fileInfo} />
       </div>
       <div className="flex-1 p-4 flex items-center justify-center">
         <GridCanvas canvasRef={canvasRef} handleDownload={handleDownload} />

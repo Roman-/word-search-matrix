@@ -12,6 +12,12 @@ export default function GenerationControls({
   progress,
   status,
 }) {
+  const fillLetters = () => {
+    const unique = Array.from(
+      new Set(words.replace(/[^A-Za-z]/g, '').toUpperCase().split(''))
+    )
+    setLetters(unique.sort().join(''))
+  }
   return (
     <div className="flex flex-col gap-3">
       <input
@@ -21,13 +27,18 @@ export default function GenerationControls({
         onChange={(e) => setWords(e.target.value)}
         placeholder="Words (space-separated)"
       />
-      <input
-        type="text"
-        className="input input-bordered w-full"
-        value={letters}
-        onChange={(e) => setLetters(e.target.value)}
-        placeholder="Possible letters (e.g. ABCD)"
-      />
+      <div className="flex gap-2">
+        <input
+          type="text"
+          className="input input-bordered flex-1"
+          value={letters}
+          onChange={(e) => setLetters(e.target.value)}
+          placeholder="Possible letters (e.g. ABCD)"
+        />
+        <button className="btn btn-square" onClick={fillLetters}>
+          🔤
+        </button>
+      </div>
       <input
         type="text"
         className="input input-bordered w-full"

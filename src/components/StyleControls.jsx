@@ -18,23 +18,27 @@ export default function StyleControls({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2">
-        <label className="flex flex-col w-24">
-          <span className="label-text">Cell</span>
+      <div className="flex flex-col gap-3">
+        <label className="flex flex-col">
+          <span className="label-text">Cell: {cellSize}</span>
           <input
-            type="number"
-            className="input input-bordered"
+            type="range"
+            min="5"
+            max="200"
             value={cellSize}
             onChange={(e) => setCellSize(e.target.value)}
+            className="range"
           />
         </label>
-        <label className="flex flex-col w-24">
-          <span className="label-text">Margin</span>
+        <label className="flex flex-col">
+          <span className="label-text">Margin: {margin}</span>
           <input
-            type="number"
-            className="input input-bordered"
+            type="range"
+            min="0"
+            max="400"
             value={margin}
             onChange={(e) => setMargin(e.target.value)}
+            className="range"
           />
         </label>
       </div>
