@@ -22,12 +22,13 @@ const getRandomPaletteColor = () =>
 function App() {
   const [words, setWords] = useState('hello world')
   const [letters, setLetters] = useState('')
-  const [size, setSize] = useState('6x6')
+  const [width, setWidth] = useState(6)
+  const [height, setHeight] = useState(6)
   const [font, setFont] = useState(fonts[0])
   const [cellSize, setCellSize] = useState(90)
   const [margin, setMargin] = useState(0)
   const [bold, setBold] = useState(true)
-  const [colorMode, setColorMode] = useState('solid')
+  const [colorMode, setColorMode] = useState('gradient')
   const [solidColor, setSolidColor] = useState('#000000')
   const [encoding, setEncoding] = useState('free')
   const [gradientColors, setGradientColors] = useState({
@@ -43,7 +44,7 @@ function App() {
   const [status, setStatus] = useState('')
   const [gridData, setGridData] = useState(null)
 
-  const [showSeparators, setShowSeparators] = useState(false)
+  const [showSeparators, setShowSeparators] = useState(true)
   const [showBorder, setShowBorder] = useState(false)
   const [lineThickness, setLineThickness] = useState(1)
   const [separatorColor, setSeparatorColor] = useState('#808080')
@@ -90,9 +91,6 @@ function App() {
   }
 
   const handleGenerate = () => {
-    const [wStr, hStr] = size.toLowerCase().split('x')
-    const width = parseInt(wStr, 10)
-    const height = parseInt(hStr ?? wStr, 10)
     if (!words || !width || !height) return
 
     if (workerRef.current) workerRef.current.terminate()
@@ -264,8 +262,10 @@ function App() {
           setWords={setWords}
           letters={letters}
           setLetters={setLetters}
-          size={size}
-          setSize={setSize}
+          width={width}
+          setWidth={setWidth}
+          height={height}
+          setHeight={setHeight}
           encoding={encoding}
           setEncoding={setEncoding}
           handleGenerate={handleGenerate}

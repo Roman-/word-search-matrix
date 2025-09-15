@@ -3,8 +3,10 @@ export default function GenerationControls({
   setWords,
   letters,
   setLetters,
-  size,
-  setSize,
+  width,
+  setWidth,
+  height,
+  setHeight,
   encoding,
   setEncoding,
   handleGenerate,
@@ -25,6 +27,9 @@ export default function GenerationControls({
         className="input input-bordered w-full"
         value={words}
         onChange={(e) => setWords(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleGenerate()
+        }}
         placeholder="Words (space-separated)"
       />
       <div className="flex gap-2">
@@ -39,13 +44,28 @@ export default function GenerationControls({
           🔤
         </button>
       </div>
-      <input
-        type="text"
-        className="input input-bordered w-full"
-        value={size}
-        onChange={(e) => setSize(e.target.value)}
-        placeholder="Grid size (e.g. 6x6)"
-      />
+      <label className="flex flex-col">
+        <span className="label-text">Width: {width}</span>
+        <input
+          type="range"
+          min="2"
+          max="15"
+          value={width}
+          onChange={(e) => setWidth(parseInt(e.target.value, 10))}
+          className="range"
+        />
+      </label>
+      <label className="flex flex-col">
+        <span className="label-text">Height: {height}</span>
+        <input
+          type="range"
+          min="2"
+          max="15"
+          value={height}
+          onChange={(e) => setHeight(parseInt(e.target.value, 10))}
+          className="range"
+        />
+      </label>
       <label className="flex flex-col w-full">
         <span className="label-text">Encoding Method</span>
         <select
