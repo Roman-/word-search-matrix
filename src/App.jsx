@@ -10,6 +10,7 @@ import { SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE } from './data/languages'
 import { WORD_SETS, WORDS_PER_FILL } from './data/wordSets'
 import { ALPHABETS } from './data/alphabets'
 import { getRandomUniqueItems } from './utils/random'
+import { drawPreview } from './utils/previewRenderer'
 
 const fonts = ['Roboto', 'Open Sans', 'Lato', 'Poppins', 'Montserrat']
 const darkPalette = [
@@ -60,10 +61,12 @@ function App() {
   })
   const canvasRef = useRef(null)
   const workerRef = useRef(null)
+  const lastPreviewSignatureRef = useRef(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState('')
   const [gridData, setGridData] = useState(null)
+  const [gridStatus, setGridStatus] = useState('preview')
 
   const [showSeparators, setShowSeparators] = useState(true)
   const [showBorder, setShowBorder] = useState(false)
@@ -105,9 +108,131 @@ function App() {
   ])
 
   useEffect(() => {
+    if (gridStatus !== 'preview') {
+      return
+    }
+    const canvas = canvasRef.current
+    if (!canvas) {
+      return
+    }
+
+    const signature = JSON.stringify({
+      width,
+      height,
+      cellSize,
+      margin,
+      font,
+      bold,
+      colorMode,
+      solidColor,
+      gradientColors,
+      showSeparators,
+      showBorder,
+      lineThickness,
+      separatorColor,
+      separatorStyle,
+    })
+
+    if (lastPreviewSignatureRef.current === signature) {
+      return
+    }
+
+    let cancelled = false
+
+    const renderPreview = async () => {
+      try {
+        await drawPreview({
+          canvas,
+          width,
+          height,
+          cellSize,
+          margin,
+          font,
+          bold,
+          colorMode,
+          solidColor,
+          gradientColors,
+          showSeparators,
+          showBorder,
+          lineThickness,
+          separatorColor,
+          separatorStyle,
+          paletteColorProvider: getRandomPaletteColor,
+        })
+        if (!cancelled) {
+          lastPreviewSignatureRef.current = signature
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to render preview', error)
+        }
+      }
+    }
+
+    renderPreview()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    gridStatus,
+    width,
+    height,
+    cellSize,
+    margin,
+    font,
+    bold,
+    colorMode,
+    solidColor,
+    gradientColors,
+    showSeparators,
+    showBorder,
+    lineThickness,
+    separatorColor,
+    separatorStyle,
+  ])
+
+  useEffect(() => {
     handleGenerate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const invalidateGrid = ({ refreshPreview = false } = {}) => {
+    const shouldReset = gridStatus !== 'preview' || refreshPreview
+    if (shouldReset) {
+      lastPreviewSignatureRef.current = null
+      setFileInfo({ name: '', size: '' })
+      setGridData((prev) => (prev ? null : prev))
+    }
+    if (gridStatus !== 'preview') {
+      setGridStatus('preview')
+    }
+  }
+
+  const handleWordsChange = (value) => {
+    setWords(value)
+    invalidateGrid()
+  }
+
+  const handleLettersChange = (value) => {
+    setLetters(value)
+    invalidateGrid()
+  }
+
+  const handleWidthChange = (value) => {
+    setWidth(value)
+    invalidateGrid({ refreshPreview: true })
+  }
+
+  const handleHeightChange = (value) => {
+    setHeight(value)
+    invalidateGrid({ refreshPreview: true })
+  }
+
+  const handleEncodingChange = (value) => {
+    setEncoding(value)
+    invalidateGrid()
+  }
 
   const handleLanguageChange = (value) => {
     if (SUPPORTED_LANGUAGES.some((option) => option.code === value)) {
@@ -132,14 +257,14 @@ function App() {
     const availableWords = WORD_SETS[language] ?? []
     const randomWords = getRandomUniqueItems(availableWords, WORDS_PER_FILL)
     if (randomWords.length) {
-      setWords(randomWords.join(' '))
+      handleWordsChange(randomWords.join(' '))
     }
   }
 
   const fillLettersWithAlphabet = () => {
     const alphabet = ALPHABETS[language]
     if (alphabet) {
-      setLetters(alphabet)
+      handleLettersChange(alphabet)
     }
   }
 
@@ -182,6 +307,7 @@ function App() {
       } else if (type === 'result') {
         const { grid, partial, placements } = e.data.result
         setGridData(grid)
+        setGridStatus('generated')
         setIsGenerating(false)
         setProgress(1)
         worker.terminate()
@@ -198,11 +324,15 @@ function App() {
         setIsGenerating(false)
         worker.terminate()
         setStatus(e.data.message)
+        setGridData(null)
         const canvas = canvasRef.current
         if (canvas) {
           const ctx = canvas.getContext('2d')
           ctx.clearRect(0, 0, canvas.width, canvas.height)
         }
+        lastPreviewSignatureRef.current = null
+        setGridStatus('preview')
+        setFileInfo({ name: '', size: '' })
       }
     }
     worker.postMessage({
@@ -337,17 +467,17 @@ function App() {
         <div className="w-full md:w-1/3 bg-base-100 p-4 flex flex-col gap-6 shadow-xl">
           <GenerationControls
             words={words}
-            setWords={setWords}
+            setWords={handleWordsChange}
             letters={letters}
-            setLetters={setLetters}
+            setLetters={handleLettersChange}
             onFillWords={fillWordsWithRandomSet}
             onFillLetters={fillLettersWithAlphabet}
             width={width}
-            setWidth={setWidth}
+            setWidth={handleWidthChange}
             height={height}
-            setHeight={setHeight}
+            setHeight={handleHeightChange}
             encoding={encoding}
-            setEncoding={setEncoding}
+            setEncoding={handleEncodingChange}
             handleGenerate={handleGenerate}
             isGenerating={isGenerating}
             progress={progress}
