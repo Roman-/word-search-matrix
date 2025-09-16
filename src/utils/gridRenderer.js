@@ -1,9 +1,6 @@
 import tinycolor from 'tinycolor2'
 import { ensureFontLoaded } from './font'
 
-const DOT_CHARACTER = '•'
-const HINT_LINES = ['CLICK HERE', 'to generate new grid']
-
 const getDashPattern = (style, lineThickness) => {
   const normalized = Math.max(1, lineThickness)
   const dashMap = {
@@ -14,50 +11,57 @@ const getDashPattern = (style, lineThickness) => {
   return dashMap[style] ?? []
 }
 
-export const drawPreview = async ({
+export const renderGridToCanvas = async ({
   canvas,
-  width,
-  height,
-  cellSize,
-  margin,
-  font,
-  bold,
-  colorMode,
-  solidColor,
-  gradientColors,
-  showSeparators,
-  showBorder,
-  lineThickness,
-  separatorColor,
-  separatorStyle,
+  grid,
+  words,
+  style,
+  separators,
   paletteColorProvider,
 }) => {
-  if (!canvas) {
-    return
+  if (!canvas || !Array.isArray(grid) || grid.length === 0) {
+    return null
   }
 
-  const rows = Math.max(0, height)
-  const cols = Math.max(0, width)
-  const cell = parseInt(cellSize, 10) || 40
-  const m = parseInt(margin, 10) || 0
+  const {
+    cellSize,
+    margin,
+    font,
+    bold,
+    colorMode,
+    solidColor,
+    gradientColors,
+  } = style
+  const { showSeparators, showBorder, lineThickness, separatorColor, separatorStyle } =
+    separators
+
+  const rows = grid.length
+  const cols = grid[0]?.length ?? 0
+  if (rows === 0 || cols === 0) {
+    return null
+  }
+
+  const cell = Number(cellSize) || 40
+  const m = Number(margin) || 0
 
   const ctx = canvas.getContext('2d')
   if (!ctx) {
-    return
+    return null
   }
 
-  const previewWidth = cols * cell + m * 2
-  const previewHeight = rows * cell + m * 2
+  const fontSpec = `${bold ? 'bold ' : ''}${Math.floor(cell * 0.6)}px "${font}"`
+  await ensureFontLoaded(fontSpec)
 
-  canvas.width = previewWidth
-  canvas.height = previewHeight
-  ctx.clearRect(0, 0, previewWidth, previewHeight)
+  canvas.width = cols * cell + m * 2
+  canvas.height = rows * cell + m * 2
 
-  const letterFontSpec = `${bold ? 'bold ' : ''}${Math.floor(cell * 0.6)}px "${font}"`
-  await ensureFontLoaded(letterFontSpec)
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.font = letterFontSpec
+  ctx.font = fontSpec
+
+  const paletteProvider =
+    typeof paletteColorProvider === 'function' ? paletteColorProvider : () => solidColor
 
   const getGradientColor = (i, j) => {
     if (!gradientColors) {
@@ -77,11 +81,11 @@ export const drawPreview = async ({
       let fillStyle = solidColor
       if (colorMode === 'gradient') {
         fillStyle = getGradientColor(i, j)
-      } else if (colorMode === 'random' && typeof paletteColorProvider === 'function') {
-        fillStyle = paletteColorProvider()
+      } else if (colorMode === 'random') {
+        fillStyle = paletteProvider()
       }
       ctx.fillStyle = fillStyle
-      ctx.fillText(DOT_CHARACTER, x, y)
+      ctx.fillText(grid[i][j], x, y)
     }
   }
 
@@ -115,27 +119,14 @@ export const drawPreview = async ({
     ctx.restore()
   }
 
-  const widthBasedSize = previewWidth > 0 ? previewWidth * 0.1 : 0
-  const hintFontSize = Math.max(16, Math.min(widthBasedSize, 64))
-  const hintFontWeight = bold ? '600 ' : ''
-  const hintFontSpec = `${hintFontWeight}${Math.round(hintFontSize)}px "${font}"`
-  await ensureFontLoaded(hintFontSpec)
+  const firstWord = words?.trim().split(/\s+/)[0] || 'image'
+  const baseFile = `${firstWord}_${canvas.width}x${canvas.height}px`
+  const fileName = `${baseFile}.png`
+  const dataUrl = canvas.toDataURL('image/png')
+  const byteLength = Math.round((dataUrl.length - 'data:image/png;base64,'.length) * 0.75)
+  const size = `${(byteLength / 1024).toFixed(2)} KB`
 
-  ctx.save()
-  ctx.font = hintFontSpec
-  ctx.fillStyle = 'rgba(55, 65, 81, 0.85)'
-  ctx.shadowColor = 'rgba(255, 255, 255, 0.8)'
-  ctx.shadowBlur = Math.max(4, hintFontSize / 6)
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  const lineHeight = hintFontSize * 1.1
-  const totalHeight = lineHeight * HINT_LINES.length
-  const startY = previewHeight / 2 - totalHeight / 2 + lineHeight / 2
-  HINT_LINES.forEach((line, index) => {
-    const y = startY + index * lineHeight
-    ctx.fillText(line, previewWidth / 2, y)
-  })
-  ctx.restore()
+  return { name: fileName, size }
 }
 
-export default drawPreview
+export default renderGridToCanvas
