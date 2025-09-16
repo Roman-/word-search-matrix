@@ -38,9 +38,14 @@ export default function GenerationControls({
     }
   }
 
-  const normalizedWordLetters = words.replace(/\s+/g, '')
-  const uniqueLetters = Array.from(new Set(normalizedWordLetters.toUpperCase())).join('')
-  const lettersPlaceholder = `Other letters to fill the grid: ${uniqueLetters}`
+  const normalizedWordLetters = words.replace(/\s+/g, '').toUpperCase()
+  const uniqueLetters = Array.from(new Set(normalizedWordLetters))
+    .sort((a, b) => a.localeCompare(b))
+    .join('')
+  const baseLettersPlaceholder = 'Other letters to fill the grid'
+  const lettersPlaceholder = uniqueLetters
+    ? `${baseLettersPlaceholder}: ${uniqueLetters}`
+    : baseLettersPlaceholder
 
   return (
     <div className="flex flex-col gap-3">

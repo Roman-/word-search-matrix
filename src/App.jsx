@@ -25,6 +25,9 @@ const darkPalette = [
 const getRandomPaletteColor = () =>
   darkPalette[Math.floor(Math.random() * darkPalette.length)]
 
+const DEFAULT_WIDTH = 6
+const DEFAULT_HEIGHT = 6
+
 const LANGUAGE_STORAGE_KEY = 'word-search-language'
 const APP_NAME = 'Word Search Matrix'
 
@@ -42,17 +45,25 @@ const resolveInitialLanguage = () => {
   }
 }
 
+const filterWordsByDimensions = (wordList, maxWidth, maxHeight) =>
+  wordList.filter((word) => word.length <= maxWidth && word.length <= maxHeight)
+
 function App() {
   const initialLanguage = useMemo(() => resolveInitialLanguage(), [])
   const [language, setLanguage] = useState(initialLanguage)
   const [words, setWords] = useState(() => {
     const availableWords = WORD_SETS[initialLanguage] ?? []
-    const randomWords = getRandomUniqueItems(availableWords, WORDS_PER_FILL)
+    const filteredWords = filterWordsByDimensions(
+      availableWords,
+      DEFAULT_WIDTH,
+      DEFAULT_HEIGHT
+    )
+    const randomWords = getRandomUniqueItems(filteredWords, WORDS_PER_FILL)
     return randomWords.length ? randomWords.join(' ') : ''
   })
   const [letters, setLetters] = useState('')
-  const [width, setWidth] = useState(6)
-  const [height, setHeight] = useState(6)
+  const [width, setWidth] = useState(DEFAULT_WIDTH)
+  const [height, setHeight] = useState(DEFAULT_HEIGHT)
   const [font, setFont] = useState(fonts[0])
   const [cellSize, setCellSize] = useState(90)
   const [margin, setMargin] = useState(0)
@@ -262,7 +273,8 @@ function App() {
 
   const fillWordsWithRandomSet = () => {
     const availableWords = WORD_SETS[language] ?? []
-    const randomWords = getRandomUniqueItems(availableWords, WORDS_PER_FILL)
+    const filteredWords = filterWordsByDimensions(availableWords, width, height)
+    const randomWords = getRandomUniqueItems(filteredWords, WORDS_PER_FILL)
     if (randomWords.length) {
       handleWordsChange(randomWords.join(' '))
     }
