@@ -5,6 +5,9 @@ export default function GenerationControls({
   setLetters,
   onFillWords,
   onFillLetters,
+  languages,
+  language,
+  onLanguageChange,
   width,
   setWidth,
   height,
@@ -16,6 +19,7 @@ export default function GenerationControls({
   progress,
   status,
 }) {
+  const languageOptions = Array.isArray(languages) ? languages : []
   const handleFillWords = () => {
     if (onFillWords) {
       onFillWords()
@@ -28,9 +32,19 @@ export default function GenerationControls({
     }
   }
 
+  const handleLanguageChange = (event) => {
+    if (onLanguageChange) {
+      onLanguageChange(event.target.value)
+    }
+  }
+
+  const normalizedWordLetters = words.replace(/\s+/g, '')
+  const uniqueLetters = Array.from(new Set(normalizedWordLetters.toUpperCase())).join('')
+  const lettersPlaceholder = `Other letters to fill the grid: ${uniqueLetters}`
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <input
           type="text"
           className="input input-bordered flex-1"
@@ -50,6 +64,19 @@ export default function GenerationControls({
         >
           🎲
         </button>
+        <select
+          className="select select-bordered select-sm w-16 text-lg text-center"
+          value={language}
+          onChange={handleLanguageChange}
+          aria-label="Select language"
+          title="Select language"
+        >
+          {languageOptions.map((option) => (
+            <option key={option.code} value={option.code} title={option.label}>
+              {option.flag ?? option.label}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="flex gap-2">
         <input
@@ -57,7 +84,7 @@ export default function GenerationControls({
           className="input input-bordered flex-1"
           value={letters}
           onChange={(e) => setLetters(e.target.value)}
-          placeholder="Possible letters (e.g. ABCD)"
+          placeholder={lettersPlaceholder}
         />
         <button
           type="button"

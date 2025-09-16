@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import tinycolor from 'tinycolor2'
 import Navbar from './components/Navbar'
 import GenerationControls from './components/GenerationControls'
@@ -28,21 +28,28 @@ const getRandomPaletteColor = () =>
 const LANGUAGE_STORAGE_KEY = 'word-search-language'
 const APP_NAME = 'Word Search Matrix'
 
+const resolveInitialLanguage = () => {
+  if (typeof window === 'undefined') {
+    return DEFAULT_LANGUAGE
+  }
+  try {
+    const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
+    return SUPPORTED_LANGUAGES.some((option) => option.code === stored)
+      ? stored
+      : DEFAULT_LANGUAGE
+  } catch {
+    return DEFAULT_LANGUAGE
+  }
+}
+
 function App() {
-  const [language, setLanguage] = useState(() => {
-    if (typeof window === 'undefined') {
-      return DEFAULT_LANGUAGE
-    }
-    try {
-      const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
-      return SUPPORTED_LANGUAGES.some((option) => option.code === stored)
-        ? stored
-        : DEFAULT_LANGUAGE
-    } catch {
-      return DEFAULT_LANGUAGE
-    }
+  const initialLanguage = useMemo(() => resolveInitialLanguage(), [])
+  const [language, setLanguage] = useState(initialLanguage)
+  const [words, setWords] = useState(() => {
+    const availableWords = WORD_SETS[initialLanguage] ?? []
+    const randomWords = getRandomUniqueItems(availableWords, WORDS_PER_FILL)
+    return randomWords.length ? randomWords.join(' ') : ''
   })
-  const [words, setWords] = useState('hello world')
   const [letters, setLetters] = useState('')
   const [width, setWidth] = useState(6)
   const [height, setHeight] = useState(6)
@@ -457,12 +464,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-base-200">
-      <Navbar
-        title={APP_NAME}
-        language={language}
-        languages={SUPPORTED_LANGUAGES}
-        onLanguageChange={handleLanguageChange}
-      />
+      <Navbar title={APP_NAME} />
       <div className="flex flex-1 flex-col md:flex-row">
         <div className="w-full md:w-1/3 bg-base-100 p-4 flex flex-col gap-6 shadow-xl">
           <GenerationControls
@@ -472,6 +474,9 @@ function App() {
             setLetters={handleLettersChange}
             onFillWords={fillWordsWithRandomSet}
             onFillLetters={fillLettersWithAlphabet}
+            languages={SUPPORTED_LANGUAGES}
+            language={language}
+            onLanguageChange={handleLanguageChange}
             width={width}
             setWidth={handleWidthChange}
             height={height}

@@ -1,7 +1,7 @@
 import tinycolor from 'tinycolor2'
 
 const DOT_CHARACTER = '•'
-const HINT_TEXT = 'Press GENERATE to create a grid'
+const HINT_LINES = ['Press', 'GENERATE', 'to create grid']
 
 const getDashPattern = (style, lineThickness) => {
   const normalized = Math.max(1, lineThickness)
@@ -125,8 +125,8 @@ export const drawPreview = async ({
     ctx.restore()
   }
 
-  const base = Math.max(1, Math.min(previewWidth, previewHeight))
-  const hintFontSize = Math.max(16, Math.min(base * 0.15, 64))
+  const widthBasedSize = previewWidth > 0 ? previewWidth * 0.1 : 0
+  const hintFontSize = Math.max(16, Math.min(widthBasedSize, 64))
   const hintFontWeight = bold ? '600 ' : ''
   const hintFontSpec = `${hintFontWeight}${Math.round(hintFontSize)}px "${font}"`
   await ensureFontLoaded(hintFontSpec)
@@ -136,7 +136,15 @@ export const drawPreview = async ({
   ctx.fillStyle = 'rgba(55, 65, 81, 0.85)'
   ctx.shadowColor = 'rgba(255, 255, 255, 0.8)'
   ctx.shadowBlur = Math.max(4, hintFontSize / 6)
-  ctx.fillText(HINT_TEXT, previewWidth / 2, previewHeight / 2)
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  const lineHeight = hintFontSize * 1.1
+  const totalHeight = lineHeight * HINT_LINES.length
+  const startY = previewHeight / 2 - totalHeight / 2 + lineHeight / 2
+  HINT_LINES.forEach((line, index) => {
+    const y = startY + index * lineHeight
+    ctx.fillText(line, previewWidth / 2, y)
+  })
   ctx.restore()
 }
 
