@@ -93,14 +93,32 @@ function App() {
   const handleGenerate = () => {
     if (!words || !width || !height) return
 
-    if (workerRef.current) workerRef.current.terminate()
+    if (workerRef.current) {
+      workerRef.current.terminate()
+      workerRef.current = null
+    }
 
     const wordsArr = words.trim().split(/\s+/).filter(Boolean)
     const lettersArr = letters.split('').filter(Boolean)
+    const wordsUpper = wordsArr.map((w) => w.toUpperCase())
+    const tooLong = wordsUpper.find((word) => word.length > width || word.length > height)
 
-    setIsGenerating(true)
     setProgress(0)
     setStatus('')
+
+    if (tooLong) {
+      const limits = []
+      if (tooLong.length > width) limits.push(`width ${width}`)
+      if (tooLong.length > height) limits.push(`height ${height}`)
+      const limitText = limits.length === 2 ? `${limits[0]} and ${limits[1]}` : limits[0]
+      setStatus(
+        `Cannot place ${tooLong} because its length (${tooLong.length}) exceeds ${limitText}.`
+      )
+      setIsGenerating(false)
+      return
+    }
+
+    setIsGenerating(true)
 
     const worker = new Worker(new URL('./utils/generateWorker.js', import.meta.url), { type: 'module' })
     workerRef.current = worker
