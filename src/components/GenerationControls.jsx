@@ -1,41 +1,50 @@
+import RangeInput from './common/RangeInput'
+
+const DIMENSION_CONTROLS = [
+  { id: 'width', label: 'Width', min: 2, max: 15 },
+  { id: 'height', label: 'Height', min: 2, max: 15 },
+]
+
 export default function GenerationControls({
-  words,
-  setWords,
-  letters,
-  setLetters,
+  settings,
+  onChange,
   onFillWords,
   onFillLetters,
   languages,
   language,
   onLanguageChange,
-  width,
-  setWidth,
-  height,
-  setHeight,
-  encoding,
-  setEncoding,
-  handleGenerate,
+  onGenerate,
   isGenerating,
   progress,
   status,
 }) {
+  const { words = '', letters = '', width = 0, height = 0, encoding = 'free' } =
+    settings ?? {}
+
   const languageOptions = Array.isArray(languages) ? languages : []
+
+  const handleWordsChange = (event) => {
+    onChange?.({ words: event.target.value })
+  }
+
+  const handleLettersChange = (event) => {
+    onChange?.({ letters: event.target.value })
+  }
+
   const handleFillWords = () => {
-    if (onFillWords) {
-      onFillWords()
-    }
+    onFillWords?.()
   }
 
   const handleFillLetters = () => {
-    if (onFillLetters) {
-      onFillLetters()
-    }
+    onFillLetters?.()
   }
 
-  const handleLanguageChange = (event) => {
-    if (onLanguageChange) {
-      onLanguageChange(event.target.value)
-    }
+  const handleLanguageSelect = (event) => {
+    onLanguageChange?.(event.target.value)
+  }
+
+  const handleEncodingSelect = (event) => {
+    onChange?.({ encoding: event.target.value })
   }
 
   const normalizedWordLetters = words.replace(/\s+/g, '').toUpperCase()
@@ -49,14 +58,16 @@ export default function GenerationControls({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-2 items-center">
+      <div className="flex items-center gap-2">
         <input
           type="text"
           className="input input-bordered flex-1"
           value={words}
-          onChange={(e) => setWords(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleGenerate()
+          onChange={handleWordsChange}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              onGenerate?.()
+            }
           }}
           placeholder="Words (space-separated)"
         />
@@ -70,9 +81,9 @@ export default function GenerationControls({
           🎲
         </button>
         <select
-          className="select select-bordered select-sm w-16 text-lg text-center"
+          className="select select-bordered select-sm w-16 text-center text-lg"
           value={language}
-          onChange={handleLanguageChange}
+          onChange={handleLanguageSelect}
           aria-label="Select language"
           title="Select language"
         >
@@ -83,12 +94,13 @@ export default function GenerationControls({
           ))}
         </select>
       </div>
+
       <div className="flex gap-2">
         <input
           type="text"
           className="input input-bordered flex-1"
           value={letters}
-          onChange={(e) => setLetters(e.target.value)}
+          onChange={handleLettersChange}
           placeholder={lettersPlaceholder}
         />
         <button
@@ -101,52 +113,50 @@ export default function GenerationControls({
           🔤
         </button>
       </div>
-      <label className="flex flex-col">
-        <span className="label-text">Width: {width}</span>
-        <input
-          type="range"
-          min="2"
-          max="15"
-          value={width}
-          onChange={(e) => setWidth(parseInt(e.target.value, 10))}
-          className="range"
+
+      {DIMENSION_CONTROLS.map(({ id, label, min, max }) => (
+        <RangeInput
+          key={id}
+          id={`dimension-${id}`}
+          label={label}
+          min={min}
+          max={max}
+          value={id === 'width' ? width : height}
+          onChange={(value) => onChange?.({ [id]: value })}
         />
-      </label>
+      ))}
+
       <label className="flex flex-col">
-        <span className="label-text">Height: {height}</span>
-        <input
-          type="range"
-          min="2"
-          max="15"
-          value={height}
-          onChange={(e) => setHeight(parseInt(e.target.value, 10))}
-          className="range"
-        />
-      </label>
-      <label className="flex flex-col w-full">
         <span className="label-text">Encoding Method</span>
         <select
           className="select select-bordered"
           value={encoding}
-          onChange={(e) => setEncoding(e.target.value)}
+          onChange={handleEncodingSelect}
         >
           <option value="free">Free allocation (no intersections)</option>
           <option value="intersections">Force intersections</option>
         </select>
       </label>
-      <button className="btn btn-primary" onClick={handleGenerate}>
+
+      <button type="button" className="btn btn-primary" onClick={onGenerate}>
         Generate
       </button>
+
       <div className="h-4">
         {isGenerating && (
           <progress
-            className="progress w-full h-4"
-            value={progress * 100}
+            className="progress h-4 w-full"
+            value={Math.min(100, Math.round(progress * 100))}
             max="100"
           ></progress>
         )}
       </div>
-      {status && <div className="text-warning text-sm">{status}</div>}
+
+      {status && (
+        <div className="text-sm text-warning" role="status" aria-live="polite">
+          {status}
+        </div>
+      )}
     </div>
   )
 }

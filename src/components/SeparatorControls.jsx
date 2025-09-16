@@ -1,68 +1,91 @@
-export default function SeparatorControls({
-  showSeparators,
-  setShowSeparators,
-  showBorder,
-  setShowBorder,
-  lineThickness,
-  setLineThickness,
-  separatorColor,
-  setSeparatorColor,
-  separatorStyle,
-  setSeparatorStyle,
-}) {
+import RangeInput from './common/RangeInput'
+
+const TOGGLE_OPTIONS = [
+  { id: 'showSeparators', label: 'Separators' },
+  { id: 'showBorder', label: 'Border' },
+]
+
+const SEPARATOR_STYLES = [
+  { value: 'solid', label: 'Solid' },
+  { value: 'dashed', label: 'Dashed' },
+  { value: 'dotted', label: 'Dotted' },
+]
+
+export default function SeparatorControls({ settings, onChange }) {
+  const {
+    showSeparators = true,
+    showBorder = false,
+    lineThickness = 1,
+    separatorColor = '#808080',
+    separatorStyle = 'solid',
+  } = settings ?? {}
+
   const disabled = !showSeparators && !showBorder
+
+  const handleToggle = (key) => (event) => {
+    onChange?.({ [key]: event.target.checked })
+  }
+
+  const handleThicknessChange = (value) => {
+    onChange?.({ lineThickness: value })
+  }
+
+  const handleColorChange = (event) => {
+    onChange?.({ separatorColor: event.target.value })
+  }
+
+  const handleStyleChange = (event) => {
+    onChange?.({ separatorStyle: event.target.value })
+  }
+
   return (
     <div className="flex flex-col gap-2">
-      <label className="label cursor-pointer gap-2">
-        <span className="label-text">Separators</span>
-        <input
-          type="checkbox"
-          className="checkbox"
-          checked={showSeparators}
-          onChange={(e) => setShowSeparators(e.target.checked)}
-        />
-      </label>
-      <label className="label cursor-pointer gap-2">
-        <span className="label-text">Border</span>
-        <input
-          type="checkbox"
-          className="checkbox"
-          checked={showBorder}
-          onChange={(e) => setShowBorder(e.target.checked)}
-        />
-      </label>
-      <label className="flex flex-col">
-        <span className="label-text">Thickness</span>
-        <input
-          type="range"
-          min="0"
-          max="10"
-          value={lineThickness}
-          onChange={(e) => setLineThickness(parseInt(e.target.value, 10))}
-          disabled={disabled}
-        />
-      </label>
+      {TOGGLE_OPTIONS.map(({ id, label }) => (
+        <label key={id} className="label cursor-pointer gap-2">
+          <span className="label-text">{label}</span>
+          <input
+            type="checkbox"
+            className="checkbox"
+            checked={id === 'showSeparators' ? showSeparators : showBorder}
+            onChange={handleToggle(id)}
+          />
+        </label>
+      ))}
+
+      <RangeInput
+        id="separator-thickness"
+        label="Thickness"
+        min={0}
+        max={10}
+        value={lineThickness}
+        onChange={handleThicknessChange}
+        disabled={disabled}
+      />
+
       <label className="flex flex-col">
         <span className="label-text">Separators Color</span>
         <input
           type="color"
-          className="w-16 h-10"
+          className="h-10 w-16"
           value={separatorColor}
-          onChange={(e) => setSeparatorColor(e.target.value)}
+          onChange={handleColorChange}
           disabled={disabled}
         />
       </label>
+
       <label className="flex flex-col">
         <span className="label-text">Separators Style</span>
         <select
           className="select select-bordered"
           value={separatorStyle}
-          onChange={(e) => setSeparatorStyle(e.target.value)}
+          onChange={handleStyleChange}
           disabled={disabled}
         >
-          <option value="solid">Solid</option>
-          <option value="dashed">Dashed</option>
-          <option value="dotted">Dotted</option>
+          {SEPARATOR_STYLES.map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </select>
       </label>
     </div>
