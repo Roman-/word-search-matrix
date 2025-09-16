@@ -1,10 +1,15 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import tinycolor from 'tinycolor2'
+import Navbar from './components/Navbar'
 import GenerationControls from './components/GenerationControls'
 import StyleControls from './components/StyleControls'
 import SeparatorControls from './components/SeparatorControls'
 import DownloadButtons from './components/DownloadButtons'
 import GridCanvas from './components/GridCanvas'
+import { SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE } from './data/languages'
+import { WORD_SETS, WORDS_PER_FILL } from './data/wordSets'
+import { ALPHABETS } from './data/alphabets'
+import { getRandomUniqueItems } from './utils/random'
 
 const fonts = ['Roboto', 'Open Sans', 'Lato', 'Poppins', 'Montserrat']
 const darkPalette = [
@@ -19,7 +24,23 @@ const darkPalette = [
 const getRandomPaletteColor = () =>
   darkPalette[Math.floor(Math.random() * darkPalette.length)]
 
+const LANGUAGE_STORAGE_KEY = 'word-search-language'
+const APP_NAME = 'Word Search Matrix'
+
 function App() {
+  const [language, setLanguage] = useState(() => {
+    if (typeof window === 'undefined') {
+      return DEFAULT_LANGUAGE
+    }
+    try {
+      const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
+      return SUPPORTED_LANGUAGES.some((option) => option.code === stored)
+        ? stored
+        : DEFAULT_LANGUAGE
+    } catch {
+      return DEFAULT_LANGUAGE
+    }
+  })
   const [words, setWords] = useState('hello world')
   const [letters, setLetters] = useState('')
   const [width, setWidth] = useState(6)
@@ -52,6 +73,17 @@ function App() {
   const [fileInfo, setFileInfo] = useState({ name: '', size: '' })
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+    try {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
+    } catch {
+      /* ignore local storage errors */
+    }
+  }, [language])
+
+  useEffect(() => {
     if (gridData) {
       drawGrid(gridData)
     }
@@ -77,6 +109,12 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const handleLanguageChange = (value) => {
+    if (SUPPORTED_LANGUAGES.some((option) => option.code === value)) {
+      setLanguage(value)
+    }
+  }
+
   const randomizeColors = () => {
     if (colorMode === 'gradient') {
       setGradientColors({
@@ -87,6 +125,21 @@ function App() {
       })
     } else {
       setSolidColor(getRandomPaletteColor())
+    }
+  }
+
+  const fillWordsWithRandomSet = () => {
+    const availableWords = WORD_SETS[language] ?? []
+    const randomWords = getRandomUniqueItems(availableWords, WORDS_PER_FILL)
+    if (randomWords.length) {
+      setWords(randomWords.join(' '))
+    }
+  }
+
+  const fillLettersWithAlphabet = () => {
+    const alphabet = ALPHABETS[language]
+    if (alphabet) {
+      setLetters(alphabet)
     }
   }
 
@@ -273,58 +326,68 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-base-200">
-      <div className="w-full md:w-1/3 bg-base-100 p-4 flex flex-col gap-6 shadow-xl">
-        <GenerationControls
-          words={words}
-          setWords={setWords}
-          letters={letters}
-          setLetters={setLetters}
-          width={width}
-          setWidth={setWidth}
-          height={height}
-          setHeight={setHeight}
-          encoding={encoding}
-          setEncoding={setEncoding}
-          handleGenerate={handleGenerate}
-          isGenerating={isGenerating}
-          progress={progress}
-          status={status}
-        />
-        <StyleControls
-          cellSize={cellSize}
-          setCellSize={setCellSize}
-          margin={margin}
-          setMargin={setMargin}
-          font={font}
-          setFont={setFont}
-          bold={bold}
-          setBold={setBold}
-          colorMode={colorMode}
-          setColorMode={setColorMode}
-          solidColor={solidColor}
-          setSolidColor={setSolidColor}
-          gradientColors={gradientColors}
-          setGradientColors={setGradientColors}
-          randomizeColors={randomizeColors}
-          fonts={fonts}
-        />
-        <SeparatorControls
-          showSeparators={showSeparators}
-          setShowSeparators={setShowSeparators}
-          showBorder={showBorder}
-          setShowBorder={setShowBorder}
-          lineThickness={lineThickness}
-          setLineThickness={setLineThickness}
-          separatorColor={separatorColor}
-          setSeparatorColor={setSeparatorColor}
-          separatorStyle={separatorStyle}
-          setSeparatorStyle={setSeparatorStyle}
-        />
-        <DownloadButtons handleDownload={handleDownload} fileInfo={fileInfo} />
-      </div>
-      <div className="flex-1 p-4 flex items-center justify-center">
-        <GridCanvas canvasRef={canvasRef} handleDownload={handleDownload} />
+    <div className="min-h-screen flex flex-col bg-base-200">
+      <Navbar
+        title={APP_NAME}
+        language={language}
+        languages={SUPPORTED_LANGUAGES}
+        onLanguageChange={handleLanguageChange}
+      />
+      <div className="flex flex-1 flex-col md:flex-row">
+        <div className="w-full md:w-1/3 bg-base-100 p-4 flex flex-col gap-6 shadow-xl">
+          <GenerationControls
+            words={words}
+            setWords={setWords}
+            letters={letters}
+            setLetters={setLetters}
+            onFillWords={fillWordsWithRandomSet}
+            onFillLetters={fillLettersWithAlphabet}
+            width={width}
+            setWidth={setWidth}
+            height={height}
+            setHeight={setHeight}
+            encoding={encoding}
+            setEncoding={setEncoding}
+            handleGenerate={handleGenerate}
+            isGenerating={isGenerating}
+            progress={progress}
+            status={status}
+          />
+          <StyleControls
+            cellSize={cellSize}
+            setCellSize={setCellSize}
+            margin={margin}
+            setMargin={setMargin}
+            font={font}
+            setFont={setFont}
+            bold={bold}
+            setBold={setBold}
+            colorMode={colorMode}
+            setColorMode={setColorMode}
+            solidColor={solidColor}
+            setSolidColor={setSolidColor}
+            gradientColors={gradientColors}
+            setGradientColors={setGradientColors}
+            randomizeColors={randomizeColors}
+            fonts={fonts}
+          />
+          <SeparatorControls
+            showSeparators={showSeparators}
+            setShowSeparators={setShowSeparators}
+            showBorder={showBorder}
+            setShowBorder={setShowBorder}
+            lineThickness={lineThickness}
+            setLineThickness={setLineThickness}
+            separatorColor={separatorColor}
+            setSeparatorColor={setSeparatorColor}
+            separatorStyle={separatorStyle}
+            setSeparatorStyle={setSeparatorStyle}
+          />
+          <DownloadButtons handleDownload={handleDownload} fileInfo={fileInfo} />
+        </div>
+        <div className="flex-1 p-4 flex items-center justify-center">
+          <GridCanvas canvasRef={canvasRef} handleDownload={handleDownload} />
+        </div>
       </div>
     </div>
   )

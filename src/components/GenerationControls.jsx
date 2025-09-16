@@ -3,6 +3,8 @@ export default function GenerationControls({
   setWords,
   letters,
   setLetters,
+  onFillWords,
+  onFillLetters,
   width,
   setWidth,
   height,
@@ -14,24 +16,41 @@ export default function GenerationControls({
   progress,
   status,
 }) {
-  const fillLetters = () => {
-    const unique = Array.from(
-      new Set(words.replace(/[^A-Za-z]/g, '').toUpperCase().split(''))
-    )
-    setLetters(unique.sort().join(''))
+  const handleFillWords = () => {
+    if (onFillWords) {
+      onFillWords()
+    }
   }
+
+  const handleFillLetters = () => {
+    if (onFillLetters) {
+      onFillLetters()
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
-      <input
-        type="text"
-        className="input input-bordered w-full"
-        value={words}
-        onChange={(e) => setWords(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleGenerate()
-        }}
-        placeholder="Words (space-separated)"
-      />
+      <div className="flex gap-2">
+        <input
+          type="text"
+          className="input input-bordered flex-1"
+          value={words}
+          onChange={(e) => setWords(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleGenerate()
+          }}
+          placeholder="Words (space-separated)"
+        />
+        <button
+          type="button"
+          className="btn btn-square"
+          onClick={handleFillWords}
+          aria-label="Fill words"
+          title="Fill words"
+        >
+          🎲
+        </button>
+      </div>
       <div className="flex gap-2">
         <input
           type="text"
@@ -40,7 +59,13 @@ export default function GenerationControls({
           onChange={(e) => setLetters(e.target.value)}
           placeholder="Possible letters (e.g. ABCD)"
         />
-        <button className="btn btn-square" onClick={fillLetters}>
+        <button
+          type="button"
+          className="btn btn-square"
+          onClick={handleFillLetters}
+          aria-label="Fill letters"
+          title="Fill letters"
+        >
           🔤
         </button>
       </div>
