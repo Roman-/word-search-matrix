@@ -4,7 +4,7 @@ import { createAppState, createGenerationState } from '../state/initialState'
 import usePreviewBounds from './usePreviewBounds'
 import { drawPreview } from '../utils/previewRenderer'
 import { renderGridToCanvas } from '../utils/gridRenderer'
-import { downloadCanvasImage } from '../utils/download'
+import { downloadCanvasImage, downloadJSON } from '../utils/download'
 import getRandomPaletteColor from '../utils/colors'
 import { resolveInitialLanguage } from '../utils/language'
 import { pickRandomWordsForLanguage } from '../utils/words'
@@ -44,6 +44,7 @@ export const useWordSearchController = () => {
     () => [
       { format: 'png', label: 'Download PNG' },
       { format: 'jpeg', label: 'Download JPEG' },
+      { format: 'json', label: 'Download JSON' },
     ],
     []
   )
@@ -168,11 +169,19 @@ export const useWordSearchController = () => {
 
   const handleDownload = useCallback(
     (format = 'png') => {
-      const canvas = canvasRef.current
-      if (!canvas) return
-      downloadCanvasImage(canvas, words, format)
+      if (format === 'json') {
+        if (!gridData) {
+          setStatus('Generate a grid first to download JSON data.')
+          return
+        }
+        downloadJSON(gridData, words)
+      } else {
+        const canvas = canvasRef.current
+        if (!canvas) return
+        downloadCanvasImage(canvas, words, format)
+      }
     },
-    [words]
+    [words, gridData]
   )
 
   const handleReset = useCallback(() => {
@@ -236,7 +245,7 @@ export const useWordSearchController = () => {
         setProgress(event.data.progress ?? 0)
       } else if (type === 'result') {
         const { grid, partial, placements } = event.data.result
-        setGridData(grid)
+        setGridData({ grid, partial, placements })
         setGridStatus('generated')
         setIsGenerating(false)
         setProgress(1)
@@ -296,7 +305,7 @@ export const useWordSearchController = () => {
     if (!gridData) {
       return
     }
-    drawGrid(gridData)
+    drawGrid(gridData.grid)
   }, [gridData, drawGrid])
 
   useEffect(() => {

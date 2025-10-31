@@ -28,4 +28,35 @@ export const downloadCanvasImage = (canvas, words, format = 'png') => {
   link.click()
 }
 
+export const downloadJSON = (gridData, words) => {
+  if (!gridData) {
+    return
+  }
+
+  const wordsArray = words?.trim().split(/\s+/).filter(Boolean) || []
+  const firstWord = wordsArray[0] || 'wordsearch'
+  const filename = `${firstWord}_${gridData.grid[0]?.length || 0}x${gridData.grid?.length || 0}.json`
+  
+  const jsonData = {
+    words: wordsArray,
+    grid: gridData.grid,
+    placements: gridData.placements || [],
+    dimensions: {
+      width: gridData.grid[0]?.length || 0,
+      height: gridData.grid?.length || 0
+    },
+    metadata: {
+      generatedAt: new Date().toISOString(),
+      partial: gridData.partial || false
+    }
+  }
+
+  const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
 export default downloadCanvasImage
